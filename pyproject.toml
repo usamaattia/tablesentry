@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tablesentry"
+dynamic = ["version"]
+description = "Lightweight data quality monitoring for SQL tables: freshness, volume, null spikes, schema drift and custom checks, with Slack and email alerts."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Osama Al-Attia" }]
+keywords = ["data quality", "data observability", "monitoring", "sql", "dbt", "alerts", "schema drift"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Database",
+  "Topic :: System :: Monitoring",
+]
+dependencies = [
+  "sqlalchemy>=2.0",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+duckdb = ["duckdb>=1.0", "duckdb-engine>=0.13", "pytz"]  # pytz: DuckDB needs it for TIMESTAMPTZ values
+postgres = ["psycopg[binary]>=3.1"]
+snowflake = ["snowflake-sqlalchemy>=1.6"]
+bigquery = ["sqlalchemy-bigquery>=1.9"]
+dev = ["pytest>=8", "ruff>=0.6", "duckdb>=1.0", "duckdb-engine>=0.13", "pytz", "psycopg[binary]>=3.1", "build", "twine"]
+
+[project.urls]
+Homepage = "https://github.com/OWNER/tablesentry"
+Issues = "https://github.com/OWNER/tablesentry/issues"
+
+[project.scripts]
+tablesentry = "tablesentry.cli:main"
+
+[tool.hatch.version]
+path = "src/tablesentry/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tablesentry"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/tablesentry", "tests", "README.md", "LICENSE", "CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/tablesentry/report.py" = ["E501"]  # inline CSS/HTML template

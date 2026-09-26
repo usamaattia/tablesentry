@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sentry
+          POSTGRES_PASSWORD: sentry
+          POSTGRES_DB: sentry_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sentry" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TABLESENTRY_TEST_POSTGRES_URL: postgresql+psycopg://sentry:sentry@localhost:5432/sentry_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check . && ruff format --check .
+      - name: Tests (DuckDB + Postgres)
+        run: pytest -v
+      - name: Demo runs end to end
+        run: python examples/demo.py
+
+  package:
+    name: Build and check the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Install the wheel in a clean venv and smoke test
+        run: |
+          python -m venv /tmp/v
+          /tmp/v/bin/pip install "$(ls dist/*.whl)[duckdb]"
+          cd /tmp && /tmp/v/bin/tablesentry init && /tmp/v/bin/tablesentry --version
+
+  action:
+    name: The GitHub Action works
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create a small warehouse
+        run: |
+          pip install duckdb
+          python -c "import duckdb; c=duckdb.connect('ci.duckdb'); c.execute(\"create table orders as select range id, now() updated_at from range(10)\")"
+          cat > ci.yml <<'YAML'
+          connections: {wh: "duckdb:///ci.duckdb"}
+          tables:
+            - name: orders
+              checks:
+                freshness: {column: updated_at, max_age: 1h}
+                row_count: {min: 5}
+          YAML
+      - uses: ./
+        id: sentry
+        with:
+          config: ci.yml
+          extras: duckdb
+      - run: test "${{ steps.sentry.outputs.status }}" = "pass"

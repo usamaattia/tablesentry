@@ -1,0 +1,44 @@
+# Config used by examples/demo.py. Paths are relative to the directory you run from.
+version: 1
+
+connections:
+  shop: "duckdb:///examples/demo_shop.duckdb"
+
+state: .tablesentry/state.db   # relative to this file
+
+defaults:
+  anomaly:
+    sensitivity: 4     # robust z-score needed to call a value unusual
+    min_history: 7     # runs to learn from before anomaly checks start
+
+tables:
+  - name: staging.orders_daily      # truncated and reloaded every night
+    checks:
+      row_count:
+        min: 100
+        max_change_pct: 60
+        anomaly: fail
+      nulls:
+        customer_id: {max_pct: 10, anomaly: true}
+      schema: {}
+
+  - name: analytics.orders          # the append-only history
+    checks:
+      freshness:
+        column: updated_at
+        warn_after: 6h
+        max_age: 24h
+      custom:
+        - name: negative_totals
+          sql: "select count(*) from {table} where total < 0"
+          equals: 0
+
+alerts:
+  - type: console
+    on: [warn, fail, error]
+  # - type: slack
+  #   webhook_url: ${SLACK_WEBHOOK_URL}
+
+policy:
+  repeat_after: 3d
+  notify_resolved: true

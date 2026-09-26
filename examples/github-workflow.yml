@@ -1,0 +1,26 @@
+# Copy to .github/workflows/data-quality.yml in the repo that owns your warehouse config.
+name: Data quality
+
+on:
+  schedule:
+    - cron: "15 * * * *"   # hourly
+  workflow_dispatch:
+
+jobs:
+  tablesentry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: OWNER/tablesentry@v0.1.0
+        with:
+          config: tablesentry.yml
+          extras: postgres
+          report: tablesentry-report.html
+        env:
+          WAREHOUSE_URL: ${{ secrets.WAREHOUSE_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tablesentry-report
+          path: tablesentry-report.html

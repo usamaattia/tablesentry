@@ -1,0 +1,68 @@
+name: "tablesentry data quality checks"
+description: "Run tablesentry against your warehouse on a schedule: freshness, volume, null spikes, schema drift and custom SQL checks, with Slack and email alerts."
+author: "Osama Al-Attia"
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  config:
+    description: Path to tablesentry.yml
+    default: tablesentry.yml
+  extras:
+    description: Database drivers to install, e.g. "postgres" or "snowflake" or "duckdb,postgres"
+    default: ""
+  fail-on:
+    description: Fail the job at this status or worse (warn, fail, error, never)
+    default: fail
+  report:
+    description: Write an HTML report to this path (upload it with actions/upload-artifact)
+    default: ""
+  state-dir:
+    description: Folder holding run history; cached between runs so anomaly detection can learn
+    default: .tablesentry
+
+outputs:
+  status:
+    description: Overall status of the run (pass, warn, fail, error)
+    value: ${{ steps.run.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install tablesentry
+      shell: bash
+      run: |
+        extras="${{ inputs.extras }}"
+        pip install --quiet "${GITHUB_ACTION_PATH}${extras:+[$extras]}"
+
+    - name: Restore run history
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.state-dir }}
+        key: tablesentry-state-${{ github.run_id }}
+        restore-keys: tablesentry-state-
+
+    - name: Run checks
+      id: run
+      shell: bash
+      run: |
+        args=(run -c "${{ inputs.config }}" --fail-on "${{ inputs.fail-on }}" --json tablesentry-results.json)
+        if [ -n "${{ inputs.report }}" ]; then args+=(--report "${{ inputs.report }}"); fi
+        set +e
+        tablesentry "${args[@]}"
+        code=$?
+        set -e
+        echo "status=$(python -c 'import json;print(json.load(open("tablesentry-results.json"))["status"])' 2>/dev/null || echo error)" >> "$GITHUB_OUTPUT"
+        exit $code
+
+    - name: Save run history
+      if: always()
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.state-dir }}
+        key: tablesentry-state-${{ github.run_id }}

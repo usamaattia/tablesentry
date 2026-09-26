@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.tablesentry/
+examples/demo_shop.duckdb*
+examples/demo_report.html
+tablesentry-report.html
+tablesentry-results.json
+.env
+.DS_Store
