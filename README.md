@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OWNER/tablesentry@v0.1.0
+      - uses: usamaattia/tablesentry@v0.1.0
         with:
           config: tablesentry.yml
           extras: postgres

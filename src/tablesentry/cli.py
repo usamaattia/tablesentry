@@ -18,7 +18,7 @@ from pathlib import Path
 from . import __version__
 
 TEMPLATE = """\
-# tablesentry configuration. Docs: https://github.com/OWNER/tablesentry
+# tablesentry configuration. Docs: https://github.com/usamaattia/tablesentry
 version: 1
 
 connections:

@@ -37,8 +37,8 @@ bigquery = ["sqlalchemy-bigquery>=1.9"]
 dev = ["pytest>=8", "ruff>=0.6", "duckdb>=1.0", "duckdb-engine>=0.13", "pytz", "psycopg[binary]>=3.1", "build", "twine"]
 
 [project.urls]
-Homepage = "https://github.com/OWNER/tablesentry"
-Issues = "https://github.com/OWNER/tablesentry/issues"
+Homepage = "https://github.com/usamaattia/tablesentry"
+Issues = "https://github.com/usamaattia/tablesentry/issues"
 
 [project.scripts]
 tablesentry = "tablesentry.cli:main"
